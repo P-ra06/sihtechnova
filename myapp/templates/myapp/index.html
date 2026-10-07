@@ -1,0 +1,379 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriShield — Crop Disease Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'myapp/css/app.css' %}">
+</head>
+<body>
+
+<nav class="nav">
+    <a class="brand" href="{% url 'index' %}">
+        <span class="brand-mark">🌱</span>
+        AgriShield
+    </a>
+    <div class="nav-links">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#diagnosis">Diagnose</a>
+        {% if user.is_authenticated %}
+            <span class="hello">Hi, {{ user.username }}</span>
+            <a href="{% url 'logout' %}" class="btn btn-outline">Logout</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline">Login</a>
+            <a href="{% url 'signup' %}" class="btn btn-solid">Sign Up</a>
+        {% endif %}
+    </div>
+</nav>
+
+<section class="hero">
+    <div>
+        <div class="kicker">Deep learning · PlantVillage · 38 classes</div>
+        <h1>Protect every harvest with <span>confident diagnosis</span></h1>
+        <p>
+            Upload a leaf image and AgriShield classifies the crop disease,
+            then returns prevention and field management steps you can act on.
+        </p>
+        <div class="hero-actions">
+            {% if user.is_authenticated %}
+                <a href="#diagnosis" class="btn btn-solid">Start diagnosis</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-solid">Get started</a>
+            {% endif %}
+            <a href="#dashboard" class="btn btn-ghost">View model metrics</a>
+        </div>
+        <div class="hero-stats">
+            <div><b>{{ metrics.accuracy_label }}</b><span>Accuracy</span></div>
+            <div><b>{{ metrics.precision_label }}</b><span>Precision</span></div>
+            <div><b>{{ metrics.recall_label }}</b><span>Recall</span></div>
+            <div><b>{{ metrics.f1_score_label }}</b><span>F1-score</span></div>
+        </div>
+    </div>
+    <div class="hero-card">
+        <h3>Deployed model snapshot</h3>
+        <div class="mini-row"><span>Backbone</span><strong>{{ metrics.model_name }}</strong></div>
+        <div class="mini-row"><span>Classes</span><strong>{{ metrics.num_classes }} diseases &amp; healthy states</strong></div>
+        <div class="mini-row"><span>Top-1 accuracy</span><strong>{{ metrics.accuracy_label }}</strong></div>
+        <div class="mini-row"><span>F1-score</span><strong>{{ metrics.f1_score_label }}</strong></div>
+        <div class="mini-row" style="border:0;"><span>Top-5</span><strong>{{ metrics.top5 }}%</strong></div>
+    </div>
+</section>
+
+<section class="section" id="dashboard">
+    <div class="section-head">
+        <div>
+            <div class="kicker kicker-light">Model performance</div>
+            <h2>Machine learning dashboard</h2>
+            <p>Accuracy, precision, recall and F1 for the ResNet-18 classifier that powers live diagnosis.</p>
+        </div>
+        <p class="muted">{{ metrics.split }} · {{ metrics.average }} · {{ metrics.support }} images</p>
+    </div>
+
+    <div class="dash-grid">
+        <article class="metric-card">
+            <h3>Accuracy</h3>
+            <div class="metric-top">
+                <div class="ring" data-pct="{{ metrics.accuracy_ring }}"><span>{{ metrics.accuracy|floatformat:0 }}%</span></div>
+                <div>
+                    <div class="metric-value">{{ metrics.accuracy_label }}</div>
+                    <div class="metric-note">Share of all labels the model got right</div>
+                </div>
+            </div>
+        </article>
+        <article class="metric-card">
+            <h3>Precision</h3>
+            <div class="metric-top">
+                <div class="ring" data-pct="{{ metrics.precision_ring }}"><span>{{ metrics.precision|floatformat:0 }}%</span></div>
+                <div>
+                    <div class="metric-value">{{ metrics.precision_label }}</div>
+                    <div class="metric-note">Predicted diseases that were truly that class</div>
+                </div>
+            </div>
+        </article>
+        <article class="metric-card">
+            <h3>Recall</h3>
+            <div class="metric-top">
+                <div class="ring" data-pct="{{ metrics.recall_ring }}"><span>{{ metrics.recall|floatformat:0 }}%</span></div>
+                <div>
+                    <div class="metric-value">{{ metrics.recall_label }}</div>
+                    <div class="metric-note">True cases the model successfully caught</div>
+                </div>
+            </div>
+        </article>
+        <article class="metric-card">
+            <h3>F1-score</h3>
+            <div class="metric-top">
+                <div class="ring" data-pct="{{ metrics.f1_score_ring }}"><span>{{ metrics.f1_score|floatformat:0 }}%</span></div>
+                <div>
+                    <div class="metric-value">{{ metrics.f1_score_label }}</div>
+                    <div class="metric-note">Harmonic mean of precision and recall</div>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <div class="panel-grid">
+        <div class="panel">
+            <h3>Training curve</h3>
+            <p class="muted" style="margin:6px 0 12px;">Validation accuracy and F1 across {{ metrics.epochs }} epochs.</p>
+            <svg class="chart" viewBox="0 0 520 180" role="img" aria-label="Validation accuracy and F1 over epochs">
+                <text x="8" y="18" class="chart-label">100%</text>
+                <text x="8" y="98" class="chart-label">80%</text>
+                <text x="8" y="168" class="chart-label">60%</text>
+                <line x1="40" y1="20" x2="504" y2="20" class="chart-grid"/>
+                <line x1="40" y1="98" x2="504" y2="98" class="chart-grid"/>
+                <line x1="40" y1="160" x2="504" y2="160" class="chart-grid"/>
+                <polyline class="line-f1" points="{{ metrics.f1_line }}" fill="none"/>
+                <polyline class="line-acc" points="{{ metrics.acc_line }}" fill="none"/>
+            </svg>
+            <div class="legend">
+                <span><i class="swatch acc"></i> Accuracy</span>
+                <span><i class="swatch f1"></i> F1-score</span>
+            </div>
+        </div>
+        <div class="panel radar-panel">
+            <h3>Score balance</h3>
+            <p class="muted" style="margin:6px 0 8px;">Four-way radar scaled from 90–100% so small gaps are visible.</p>
+            <svg class="radar" viewBox="0 0 220 220" role="img" aria-label="Radar of accuracy precision recall F1">
+                <polygon points="110,26 194,110 110,194 26,110" class="radar-grid"/>
+                <polygon points="110,52 168,110 110,168 52,110" class="radar-grid"/>
+                <polygon points="110,78 142,110 110,142 78,110" class="radar-grid"/>
+                <line x1="110" y1="26" x2="110" y2="194" class="radar-axis"/>
+                <line x1="26" y1="110" x2="194" y2="110" class="radar-axis"/>
+                <polygon points="{{ metrics.radar_points }}" class="radar-fill"/>
+                <text x="110" y="18" text-anchor="middle">Acc</text>
+                <text x="208" y="114" text-anchor="end">Prec</text>
+                <text x="110" y="214" text-anchor="middle">F1</text>
+                <text x="12" y="114">Rec</text>
+            </svg>
+        </div>
+    </div>
+
+    <div class="panel-grid" style="margin-top:18px;">
+        <div class="panel">
+            <h3>Headline metrics</h3>
+            <div class="meta-pills">
+                <span class="pill">{{ metrics.model_name }}</span>
+                <span class="pill">{{ metrics.parameters }} params</span>
+                <span class="pill">{{ metrics.input_size }}</span>
+                <span class="pill">{{ metrics.optimizer }} · {{ metrics.learning_rate }}</span>
+                <span class="pill">batch {{ metrics.batch_size }}</span>
+                <span class="pill">{{ metrics.dataset }}</span>
+            </div>
+            <div class="bars">
+                <div class="bar-row">
+                    <span>Accuracy <b>{{ metrics.accuracy_label }}</b></span>
+                    <div class="track"><i data-width="{{ metrics.accuracy_ring }}"></i></div>
+                </div>
+                <div class="bar-row">
+                    <span>Precision <b>{{ metrics.precision_label }}</b></span>
+                    <div class="track"><i data-width="{{ metrics.precision_ring }}"></i></div>
+                </div>
+                <div class="bar-row">
+                    <span>Recall <b>{{ metrics.recall_label }}</b></span>
+                    <div class="track"><i data-width="{{ metrics.recall_ring }}"></i></div>
+                </div>
+                <div class="bar-row">
+                    <span>F1-score <b>{{ metrics.f1_score_label }}</b></span>
+                    <div class="track"><i data-width="{{ metrics.f1_score_ring }}"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>Class-wise precision, recall, F1</h3>
+            <p class="muted" style="margin:6px 0 12px;">Per-class scores from the validation split.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Prec.</th>
+                            <th>Rec.</th>
+                            <th>F1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in metrics.class_metrics %}
+                        <tr>
+                            <td>
+                                {{ row.label }}
+                                <div class="mini-track"><i style="width:{{ row.f1_width }}%"></i></div>
+                            </td>
+                            <td>{{ row.precision }}%</td>
+                            <td>{{ row.recall }}%</td>
+                            <td><strong>{{ row.f1 }}%</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+    <div class="section-head">
+        <div>
+            <h2>What AgriShield provides</h2>
+            <p>From pixel to recommendation in one workflow.</p>
+        </div>
+    </div>
+    <div class="features">
+        <article class="feature">
+            <div class="icon">📷</div>
+            <h3>Image detection</h3>
+            <p class="muted">Clear leaf photos are resized to 224×224 and normalized the same way the network was trained.</p>
+        </article>
+        <article class="feature">
+            <div class="icon">🧠</div>
+            <h3>AI classification</h3>
+            <p class="muted">A ResNet-18 model scores 38 crop conditions and returns confidence plus top alternatives.</p>
+        </article>
+        <article class="feature">
+            <div class="icon">🌾</div>
+            <h3>Field guidance</h3>
+            <p class="muted">Each prediction maps to prevention and management steps tailored to that disease.</p>
+        </article>
+    </div>
+</section>
+
+<section class="section diagnosis" id="diagnosis">
+    <div class="section-head" style="max-width:820px;margin:0 auto 28px;text-align:center;display:block;">
+        <h2>Crop disease diagnosis</h2>
+        <p>Upload a sharp photo of the affected leaf. Best results come from even lighting and a single leaf in frame.</p>
+    </div>
+
+    {% if error %}
+        <div class="upload-box" style="margin-bottom:18px;">
+            <div class="error">{{ error }}</div>
+        </div>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+        <div class="upload-box">
+            <form method="POST" action="{% url 'predict' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="upload-area">
+                    <img id="preview" class="preview" alt="Selected leaf preview" hidden>
+                    <div id="upload-placeholder">
+                        <div style="font-size:42px;">📷</div>
+                        <h3>Upload crop image</h3>
+                        <p class="muted">JPEG or PNG, leaf filling most of the frame</p>
+                    </div>
+                    <label for="crop-image" class="choose-btn">Choose image</label>
+                    <input type="file" id="crop-image" name="image" class="file-input" accept="image/*" required>
+                    <div id="file-name">No image selected</div>
+                </div>
+                <button type="submit" class="diagnose-btn">Diagnose disease</button>
+            </form>
+        </div>
+
+        {% if prediction %}
+        <div class="result-box" id="result">
+            <h3>Diagnosis result</h3>
+            <div class="result-item"><strong>Crop:</strong> {{ prediction.crop_name }}</div>
+            <div class="result-item"><strong>Disease:</strong> {{ prediction.disease }}</div>
+            <div class="result-item"><strong>Confidence:</strong> {{ prediction.confidence }}%</div>
+            <div class="track conf-track"><i data-width="{{ prediction.confidence }}"></i></div>
+
+            {% if prediction.top_predictions %}
+            <div class="top-preds">
+                <strong>Top model scores</strong>
+                <ul>
+                    {% for item in prediction.top_predictions %}
+                    <li><span>{{ item.label }}</span><span>{{ item.confidence }}%</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if prediction.is_healthy %}
+            <div class="healthy-note">
+                The model classified this leaf as healthy. Use the steps below to keep it that way.
+            </div>
+            {% endif %}
+
+            <div class="advice-grid">
+                <div class="advice-card">
+                    <h4>Prevention</h4>
+                    <ol>
+                        {% for step in prediction.prevention %}
+                        <li>{{ step }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+                <div class="advice-card">
+                    <h4>Management</h4>
+                    <ol>
+                        {% for step in prediction.management %}
+                        <li>{{ step }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="upload-box" style="text-align:center;">
+            <h3>Login required</h3>
+            <p class="muted" style="margin:12px 0 22px;">Create a free account to run diagnosis on your crop images.</p>
+            <a href="{% url 'login' %}" class="btn btn-solid">Login to diagnose</a>
+        </div>
+    {% endif %}
+</section>
+
+<footer>
+    <span>Tech Nova AgriShield · Crop disease detection</span>
+    <span>ResNet-18 · {{ metrics.num_classes }} classes · {{ metrics.accuracy_label }} accuracy</span>
+</footer>
+
+<script>
+    document.querySelectorAll(".ring").forEach(function (el) {
+        const pct = parseFloat(el.getAttribute("data-pct") || "0");
+        requestAnimationFrame(function () {
+            el.style.setProperty("--p", String(pct));
+        });
+    });
+
+    document.querySelectorAll(".track i").forEach(function (el) {
+        const width = el.getAttribute("data-width") || "0";
+        requestAnimationFrame(function () {
+            el.style.width = width + "%";
+        });
+    });
+
+    const imageInput = document.getElementById("crop-image");
+    const fileName = document.getElementById("file-name");
+    const preview = document.getElementById("preview");
+    const placeholder = document.getElementById("upload-placeholder");
+    if (imageInput && fileName) {
+        imageInput.addEventListener("change", function () {
+            if (!this.files.length) {
+                fileName.textContent = "No image selected";
+                if (preview) {
+                    preview.hidden = true;
+                    preview.removeAttribute("src");
+                }
+                if (placeholder) placeholder.hidden = false;
+                return;
+            }
+            fileName.textContent = "Selected: " + this.files[0].name;
+            if (preview) {
+                preview.src = URL.createObjectURL(this.files[0]);
+                preview.hidden = false;
+            }
+            if (placeholder) placeholder.hidden = true;
+        });
+    }
+
+    const result = document.getElementById("result");
+    if (result) {
+        result.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign up · AgriShield</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'myapp/css/app.css' %}">
+</head>
+<body class="auth-page">
+    <aside class="auth-side">
+        <div>
+            <div class="brand" style="color:#fff;">
+                <span class="brand-mark">🌱</span>
+                AgriShield
+            </div>
+            <h1>Join the crop protection bench.</h1>
+            <p style="color:#d7eadc;max-width:380px;">
+                One account unlocks image diagnosis, confidence scores,
+                and disease-specific prevention plus management.
+            </p>
+        </div>
+        <p style="color:#9cc5aa;">Built for Smart India Hackathon · Tech Nova</p>
+    </aside>
+    <div class="auth-form-wrap">
+        <div class="auth-card">
+            <div class="brand" style="margin-bottom:8px;">
+                <span class="brand-mark">🌱</span>
+                AgriShield
+            </div>
+            <h2>Create account</h2>
+            {% if error %}
+                <div class="error">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="{% url 'signup' %}">
+                {% csrf_token %}
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Choose a username" required>
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Create a password" required>
+                <button type="submit" class="diagnose-btn">Sign up</button>
+            </form>
+            <div class="bottom">
+                Already have an account?
+                <a href="{% url 'login' %}">Login</a>
+            </div>
+            <a href="{% url 'index' %}" class="home-link">← Back to dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
